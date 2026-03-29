@@ -1,4 +1,5 @@
 
+import os
 import time
 import random
 import pathlib
@@ -29,7 +30,12 @@ _MODELS = [
 ]
 
 _BASE_URL = "https://openrouter.ai/api/v1"
-_API_KEY  = "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"
+_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+if not _API_KEY:
+    raise RuntimeError(
+        "Missing OPENROUTER_API_KEY. Add it to your local .env file before running the app."
+    )
 
 
 def _make_llm(model: str) -> ChatOpenAI:
