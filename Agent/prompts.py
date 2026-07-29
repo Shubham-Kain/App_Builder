@@ -28,7 +28,7 @@ EXAMPLES:
 
 
 def architect_prompt(plan_json: str) -> str:
-    return f"""You are the ARCHITECT agent. You receive a project plan and must write
+    return rf"""You are the ARCHITECT agent. You receive a project plan and must write
 the COMPLETE SOURCE CODE for every file right now — not descriptions, ACTUAL CODE.
 
 PROJECT PLAN:

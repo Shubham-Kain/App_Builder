@@ -1,13 +1,12 @@
-
 import os
 import time
 import random
 import pathlib
 from dotenv import load_dotenv
-
-from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph, START, END
 from openai import RateLimitError, APIStatusError
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.graph import StateGraph, START, END
+from google.api_core.exceptions import ResourceExhausted, GoogleAPICallError
 
 from Agent.prompts import planner_prompt, architect_prompt, coder_system_prompt
 from Agent.states import AppState, Plan, TaskPlan, CoderState
@@ -22,30 +21,29 @@ from Agent.tools import (
 
 load_dotenv()
 
-# ── Model list ────────────────────────────────────────────────────────────────
+# ── Model list (free-tier Gemini models, best → fallback) ────────────────────
 _MODELS = [
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "minimax/minimax-m2.5:free",
-    "arcee-ai/trinity-large-preview:free"
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
 ]
 
-_BASE_URL = "https://openrouter.ai/api/v1"
-_API_KEY = os.getenv("OPENROUTER_API_KEY")
+_API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
 
 if not _API_KEY:
     raise RuntimeError(
-        "Missing OPENROUTER_API_KEY. Add it to your local .env file before running the app."
+        "Missing GOOGLE_GEMINI_API_KEY. Add it to your local .env file before running the app."
     )
 
 
-def _make_llm(model: str) -> ChatOpenAI:
-    return ChatOpenAI(
+def _make_llm(model: str) -> ChatGoogleGenerativeAI:
+    return ChatGoogleGenerativeAI(
         model=model,
         temperature=0.2,
-        openai_api_base=_BASE_URL,
-        openai_api_key=_API_KEY,
-        request_timeout=120,
+        google_api_key=_API_KEY,
+        timeout=120,
     )
+
 
 
 def _invoke_with_fallback(chain_factory, prompt: str, label: str = "LLM"):
@@ -65,7 +63,7 @@ def _invoke_with_fallback(chain_factory, prompt: str, label: str = "LLM"):
                     return result
                 print(f"  [{label}] got None from {model} — next model")
                 break
-            except RateLimitError as e:
+            except (RateLimitError, ResourceExhausted) as e:
                 wait = 2 ** attempt + random.uniform(0, 1)
                 print(f"  [{label}] 429 on {model} attempt {attempt}/3 — wait {wait:.1f}s")
                 last_exc = e
@@ -73,8 +71,9 @@ def _invoke_with_fallback(chain_factory, prompt: str, label: str = "LLM"):
                     time.sleep(wait)
                 else:
                     print(f"  [{label}] retries exhausted — next model")
-            except APIStatusError as e:
-                if e.status_code == 404:
+            except (APIStatusError, GoogleAPICallError) as e:
+                status_code = getattr(e, "status_code", None) or getattr(e, "code", None)
+                if status_code == 404:
                     print(f"  [{label}] {model} not found — next model")
                     last_exc = e
                     break
