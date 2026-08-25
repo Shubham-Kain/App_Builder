@@ -7,13 +7,22 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
 from google.api_core.exceptions import ResourceExhausted, GoogleAPICallError
 
-from Agent.prompts import planner_prompt, architect_prompt, coder_system_prompt
-from Agent.states import AppState, Plan, TaskPlan, CoderState
+from Agent.prompts import (
+    planner_prompt,
+    html_prompt,
+    css_prompt,
+    js_prompt,
+)
+from Agent.states import (
+    AppState,
+    Plan,
+    HTMLCode,
+    CSSCode,
+    JSCode,
+)
 from Agent.tools import (
     write_file,
     read_file,
-    get_current_directory,
-    list_files,
     set_project_root,
     get_project_root,
 )
@@ -21,13 +30,14 @@ from Agent.tools import (
 load_dotenv()
 
 # ── Model list (Gemini models, best → fallback) ──────────────────────────────
-# gemini-2.5-flash is the most capable for generating complex, long code files.
-# Lite variants are used as fallback when the primary hits rate limits.
+# gemini-2.5-flash is the primary model for generating long, high-quality code.
+# Lite/1.5 variants are used as fallback if rate limits are hit.
 _MODELS = [
-    "gemini-3.1-flash-lite",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
     "gemini-1.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-lite",
 ]
 
 _API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
@@ -41,11 +51,10 @@ if not _API_KEY:
 def _make_llm(model: str) -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         model=model,
-        temperature=0.3,       # slightly higher creativity for richer code
+        temperature=0.3,
         google_api_key=_API_KEY,
-        timeout=300,           # complex apps need up to 5 minutes to generate
+        timeout=300,
     )
-
 
 
 try:
@@ -102,10 +111,10 @@ def _invoke_with_fallback(chain_factory, prompt: str, label: str = "LLM"):
     raise RuntimeError(f"[{label}] all models exhausted. Last: {last_exc}") from last_exc
 
 
-# ── Node 1: Planner ───────────────────────────────────────────────────────────
+# ── Node 1: Planner Agent ─────────────────────────────────────────────────────
 
 def planner_agent(state: AppState) -> AppState:
-    """Turn the user prompt into a structured Plan (name, files, features)."""
+    """Turn the user prompt into an exhaustive, structured Plan."""
     user_prompt: str = state["user_prompt"]
     plan: Plan = _invoke_with_fallback(
         chain_factory=lambda llm: llm.with_structured_output(Plan),
@@ -113,137 +122,99 @@ def planner_agent(state: AppState) -> AppState:
         label="Planner",
     )
     set_project_root(plan.name)
-    print(f"[Planner] '{plan.name}' | files: {[f.path for f in plan.files]}")
+    print(f"[Planner] Plan '{plan.name}' ready | {len(plan.features)} features planned.")
     return {"plan": plan}
 
 
-# ── Node 2: Architect ─────────────────────────────────────────────────────────
+# ── Node 2: HTML Architect Agent ──────────────────────────────────────────────
 
-def architect_agent(state: AppState) -> AppState:
-    """
-    Generate a TaskPlan where each task contains the COMPLETE source code
-    for its file (in the full_code field).  This is the single LLM call
-    that actually writes the code — the coder node just persists it to disk.
-    """
+def html_agent(state: AppState) -> AppState:
+    """Generate the complete, modern, semantic index.html markup."""
+    user_prompt: str = state["user_prompt"]
     plan: Plan = state["plan"]
-    task_plan: TaskPlan = _invoke_with_fallback(
-        chain_factory=lambda llm: llm.with_structured_output(TaskPlan),
-        prompt=architect_prompt(plan.model_dump_json()),
-        label="Architect",
+
+    print("[HTML Architect] Generating complete index.html...")
+    result: HTMLCode = _invoke_with_fallback(
+        chain_factory=lambda llm: llm.with_structured_output(HTMLCode),
+        prompt=html_prompt(plan.model_dump_json(), user_prompt),
+        label="HTML Architect",
     )
-    # Validate filepaths match the plan
-    plan_paths = {f.path for f in plan.files}
-    for step in task_plan.implementation_steps:
-        if step.filepath not in plan_paths:
-            # Best-effort fuzzy fix: use the closest plan path
-            basename = pathlib.Path(step.filepath).name
-            for p in plan_paths:
-                if pathlib.Path(p).name == basename:
-                    print(f"  [Architect] filepath fix: '{step.filepath}' → '{p}'")
-                    step.filepath = p
-                    break
-
-    print(f"[Architect] {len(task_plan.implementation_steps)} file(s) planned.")
-    return {"task_plan": task_plan}
+    html_code = result.code.strip()
+    write_file.run({"path": "index.html", "content": html_code})
+    print(f"[HTML Architect] index.html written ({len(html_code)} chars).")
+    return {"html_code": html_code}
 
 
-# ── Node 3: Coder (deterministic — no LLM) ───────────────────────────────────
+# ── Node 3: CSS Stylist Agent ─────────────────────────────────────────────────
 
-def coder_agent(state: AppState) -> AppState:
-    """
-    Write the next file to disk using the full_code from the architect's TaskPlan.
-    No LLM is called here — this is pure Python I/O.
+def css_agent(state: AppState) -> AppState:
+    """Generate the complete, stunning modern CSS design system."""
+    plan: Plan = state["plan"]
+    html_code: str = state["html_code"]
 
-    Why: ReAct agents on free models frequently forget to call write_file,
-    return truncated content, or respond with commentary instead of code.
-    Separating code-generation (architect) from file I/O (coder) eliminates
-    all of those failure modes.
-    """
-    coder_state: CoderState = state.get("coder_state")
-    if coder_state is None:
-        coder_state = CoderState(task_plan=state["task_plan"], current_step_idx=0)
-
-    steps = coder_state.task_plan.implementation_steps
-    idx   = coder_state.current_step_idx
-
-    if idx >= len(steps):
-        return {"coder_state": coder_state, "status": "DONE"}
-
-    task = steps[idx]
-    print(f"[Coder] Writing {idx + 1}/{len(steps)}: {task.filepath}")
-
-    code = task.full_code.strip()
-    if not code:
-        print(f"  [Coder] WARNING: full_code is empty for {task.filepath} — skipping.")
-    else:
-        result = write_file.run({"path": task.filepath, "content": code})
-        print(f"  [Coder] {result}")
-
-    coder_state = CoderState(
-        task_plan=coder_state.task_plan,
-        current_step_idx=idx + 1,
+    print("[CSS Stylist] Generating complete style.css design system...")
+    result: CSSCode = _invoke_with_fallback(
+        chain_factory=lambda llm: llm.with_structured_output(CSSCode),
+        prompt=css_prompt(plan.model_dump_json(), html_code),
+        label="CSS Stylist",
     )
-    return {"coder_state": coder_state}
+    css_code = result.code.strip()
+    write_file.run({"path": "style.css", "content": css_code})
+    print(f"[CSS Stylist] style.css written ({len(css_code)} chars).")
+    return {"css_code": css_code}
 
 
-# ── Node 4: Verifier ──────────────────────────────────────────────────────────
+# ── Node 4: JS Engineer Agent ─────────────────────────────────────────────────
+
+def js_agent(state: AppState) -> AppState:
+    """Generate complete, bug-free, fully implemented JavaScript logic."""
+    plan: Plan = state["plan"]
+    html_code: str = state["html_code"]
+    css_code: str = state["css_code"]
+
+    print("[JS Engineer] Generating complete script.js logic...")
+    result: JSCode = _invoke_with_fallback(
+        chain_factory=lambda llm: llm.with_structured_output(JSCode),
+        prompt=js_prompt(plan.model_dump_json(), html_code, css_code),
+        label="JS Engineer",
+    )
+    js_code = result.code.strip()
+    write_file.run({"path": "script.js", "content": js_code})
+    print(f"[JS Engineer] script.js written ({len(js_code)} chars).")
+    return {"js_code": js_code}
+
+
+# ── Node 5: Verifier Agent ────────────────────────────────────────────────────
 
 def verifier_agent(state: AppState) -> AppState:
-    """
-    Check every planned file exists and has non-trivial content.
-    If a file is missing or empty, re-write it from the TaskPlan's full_code.
-    This is the safety net that catches silent write failures.
-    """
-    plan: Plan          = state["plan"]
-    task_plan: TaskPlan = state["task_plan"]
-
-    code_by_path = {t.filepath: t.full_code for t in task_plan.implementation_steps}
+    """Verify all 3 files exist on disk and have rich content."""
     all_ok = True
-
-    for file in plan.files:
-        content = read_file.run(file.path)
-        if not content or len(content.strip()) < 50:
-            print(f"[Verifier] '{file.path}' missing or too short — re-writing.")
-            code = code_by_path.get(file.path, "").strip()
-            if code:
-                result = write_file.run({"path": file.path, "content": code})
-                print(f"  [Verifier] {result}")
-            else:
-                print(f"  [Verifier] No code available for '{file.path}' — cannot fix.")
-                all_ok = False
+    for fname in ("index.html", "style.css", "script.js"):
+        content = read_file.run(fname)
+        if not content or len(content.strip()) < 100:
+            print(f"[Verifier] WARNING: '{fname}' is missing or too short ({len(content)} chars).")
+            all_ok = False
         else:
-            print(f"[Verifier] '{file.path}' OK ({len(content)} chars)")
+            print(f"[Verifier] '{fname}' verified OK ({len(content)} chars).")
 
     return {"status": "DONE" if all_ok else "PARTIAL"}
 
 
-# ── Routing ───────────────────────────────────────────────────────────────────
-
-def _coder_router(state: AppState) -> str:
-    """Loop coder until all steps are done, then go to verifier."""
-    if state.get("status") == "DONE":
-        return "verifier"
-    cs: CoderState = state.get("coder_state")
-    if cs is None:
-        return "coder"
-    if cs.current_step_idx >= len(cs.task_plan.implementation_steps):
-        return "verifier"
-    return "coder"
-
-
-# ── Graph ─────────────────────────────────────────────────────────────────────
+# ── Graph Definition ──────────────────────────────────────────────────────────
 
 graph = StateGraph(AppState)
 
-graph.add_node("planner",   planner_agent)
-graph.add_node("architect", architect_agent)
-graph.add_node("coder",     coder_agent)
-graph.add_node("verifier",  verifier_agent)
+graph.add_node("planner",      planner_agent)
+graph.add_node("html_coder",   html_agent)
+graph.add_node("css_coder",    css_agent)
+graph.add_node("js_coder",     js_agent)
+graph.add_node("verifier",     verifier_agent)
 
 graph.add_edge(START,        "planner")
-graph.add_edge("planner",    "architect")
-graph.add_edge("architect",  "coder")
-graph.add_conditional_edges("coder", _coder_router, {"coder": "coder", "verifier": "verifier"})
+graph.add_edge("planner",    "html_coder")
+graph.add_edge("html_coder", "css_coder")
+graph.add_edge("css_coder",  "js_coder")
+graph.add_edge("js_coder",   "verifier")
 graph.add_edge("verifier",   END)
 
 agent = graph.compile()

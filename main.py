@@ -524,13 +524,13 @@ async function runBuild(){
   els.previewFrame.style.display = 'none';
 
   try{
-    log('planner', 'sending prompt to agent.invoke() on the backend…');
-    log('architect', 'waiting — planner → architect → coder loop → verifier runs server-side');
+    log('planner', 'analyzing user request and planning full architecture...');
+    log('pipeline', 'multi-agent pipeline running: Planner -> HTML Architect -> CSS Stylist -> JS Engineer -> Verifier...');
 
     const data = await callBackend(userPrompt);
 
     planName = (data.name || 'my_app').toString().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/gi,'').toLowerCase() || 'my_app';
-    log('planner', `plan ready → <strong>${planName}</strong> — ${data.description || ''}`);
+    log('planner', `plan ready -> <strong>${planName}</strong> -- ${data.description || ''}`);
     if(data.complexity){
       log('planner', `complexity: <strong>${data.complexity}</strong>`);
     }
@@ -551,11 +551,11 @@ async function runBuild(){
     document.getElementById('pre-style.css').textContent  = css;
     document.getElementById('pre-script.js').textContent  = js;
 
-    log('coder', `index.html written (${html.length} bytes)`);
+    log('html', `index.html generated (${html.length} bytes)`);
     document.querySelector('.tab[data-tab="index.html"]').disabled = !html;
-    log('coder', `style.css written (${css.length} bytes)`);
+    log('css', `style.css generated (${css.length} bytes)`);
     document.querySelector('.tab[data-tab="style.css"]').disabled = !css;
-    log('coder', `script.js written (${js.length} bytes)`);
+    log('js', `script.js generated (${js.length} bytes)`);
     document.querySelector('.tab[data-tab="script.js"]').disabled = !js;
 
     log('verifier', `pipeline status: ${data.status}`, data.status === 'DONE' ? 'ok' : 'err');

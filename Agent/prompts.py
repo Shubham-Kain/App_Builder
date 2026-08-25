@@ -1,405 +1,311 @@
 def planner_prompt(user_prompt: str) -> str:
-    return f"""You are the PLANNER agent for an advanced web app builder.
+    return f"""You are the PRINCIPAL SOFTWARE ARCHITECT & PRODUCT DESIGNER for an advanced web application builder.
 
-USER REQUEST: {user_prompt}
+USER REQUEST:
+{user_prompt}
 
-YOUR JOB: Produce a detailed project plan for a PURE HTML/CSS/JS web app.
+YOUR TASK:
+Produce an exhaustive, production-grade project plan for a feature-complete pure HTML/CSS/JS web application.
 
-════════════════════════════════════════════════════════════════
-STRICT RULES
-════════════════════════════════════════════════════════════════
-1. name        → lowercase, underscores only. e.g. "finance_dashboard", "study_planner"
-2. techstack   → always exactly "HTML, CSS, JavaScript"
-3. files       → EXACTLY 3 files, always these paths:
-                   index.html  (structure & markup)
-                   style.css   (all styles, themes, animations)
-                   script.js   (all logic, data, interactivity)
-4. features    → List EVERY feature the user mentioned PLUS any obvious supporting
-                 features needed to make the app complete and functional.
-                 For simple apps: 5-8 features.
-                 For complex/dashboard apps: 10-20 features. Be exhaustive.
-                 Each feature must be concrete and testable — describe what the user
-                 can DO, not how it looks.
-                 BAD:  "nice UI"
-                 BAD:  "good design"
-                 GOOD: "Add income/expense transactions with amount, category, date, note fields"
-                 GOOD: "Filter transactions by month using a dropdown selector"
-                 GOOD: "Export all transactions to a downloadable CSV file"
-                 GOOD: "Dark/light theme toggle saved to LocalStorage"
-5. description → 2-3 sentences describing what the app does and who it's for.
-6. complexity  → classify as one of: "simple", "moderate", "complex"
-                 simple   = single-purpose tool (calculator, timer, converter)
-                 moderate = multi-feature utility (todo+categories, quiz app)
-                 complex  = multi-section dashboard or productivity system
-
-════════════════════════════════════════════════════════════════
-COMPLEXITY CALIBRATION EXAMPLES
-════════════════════════════════════════════════════════════════
-
-SIMPLE EXAMPLE — "build a calculator"
-  name="calculator_app", complexity="simple"
-  features=["digit buttons 0-9", "operators +,-,*,/,% ", "= evaluates expression",
-            "C clears display", "decimal point support", "keyboard input support"]
-
-COMPLEX EXAMPLE — "Personal Finance & Expense Analytics Dashboard"
-  name="finance_dashboard", complexity="complex"
-  features=[
-    "Add income and expense transactions with amount, category, date, and optional note",
-    "Categories: Food, Travel, Shopping, Bills, Education, Health, Entertainment, Other",
-    "Edit existing transactions via an inline modal form",
-    "Delete transactions with a confirmation prompt",
-    "Live summary cards: Total Income, Total Expenses, Current Balance, Total Savings",
-    "Monthly filter: view transactions for any selected month/year",
-    "Search transactions by keyword across description and category",
-    "Category-wise spending breakdown with percentage bars",
-    "Set a monthly budget per category; show used vs remaining",
-    "Visual warning (red highlight) when a category exceeds its budget",
-    "All transactions and budgets stored in LocalStorage (persist on refresh)",
-    "Horizontal bar chart showing spending by category using pure CSS/JS",
-    "Export all transactions as a downloadable CSV file",
-    "Dark and light theme toggle with preference saved to LocalStorage",
-    "Responsive layout: sidebar on desktop, bottom nav on mobile",
-    "Custom date range filter: from-date to to-date picker",
-  ]
-
-COMPLEX EXAMPLE — "Smart Study Planner & Productivity Dashboard"
-  name="study_planner", complexity="complex"
-  features=[
-    "Add subjects with name, color tag, and target hours per week",
-    "Create study tasks with subject, topic, duration estimate, due date, priority",
-    "Priority levels: High (red), Medium (yellow), Low (green) with visual badges",
-    "Daily study plan view: tasks scheduled for today sorted by priority",
-    "Weekly planner grid: drag or click to assign tasks to day slots",
-    "Built-in Pomodoro timer: 25 min work / 5 min short break / 15 min long break",
-    "Mark tasks complete; completed tasks show strikethrough and move to done section",
-    "Study streak counter: consecutive days with at least one completed session",
-    "Daily productivity score (0-100) based on completed vs planned tasks",
-    "Subject-wise progress bars: hours studied vs weekly target",
-    "Exam countdown: add exam name + date, show days remaining with urgency color",
-    "Search and filter tasks by subject, priority, or status",
-    "All data stored in LocalStorage with automatic save on every change",
-    "Weekly productivity summary: chart of daily sessions and completion rates",
-    "Dark/light theme toggle with preference saved to LocalStorage",
-  ]
+STRICT REQUIREMENTS:
+1. name        -> Lowercase with underscores only (e.g. "smart_study_planner", "finance_analytics_dashboard").
+2. title       -> Clean, user-facing title (e.g. "Smart Study Planner & Productivity Dashboard").
+3. description -> 2-3 sentences explaining the app's mission, key features, and user benefits.
+4. complexity  -> Always "complex" for dashboards, productivity tools, planners, trackers, or financial apps.
+5. features    -> Break down the user prompt into 12 to 20 concrete, highly specific, and testable features:
+   - Include all core entities (e.g., Tasks, Subjects, Topics, Exams, Pomodoro Sessions).
+   - Include multi-view navigation tabs (e.g., Overview Dashboard, Task Planner, Pomodoro Focus, Subject Analytics, Exam Countdown, Settings/Data Export).
+   - Include metric calculation formulas (e.g., Productivity Score 0-100%, Streak Tracking, Progress Bars, Days Remaining).
+   - Include multi-criteria Search & Filtering (keyword search, subject filter, priority filter, completion status filter).
+   - Include interactive UI elements (modals for adding/editing, dark/light theme switch, toast notifications, CSV data export).
+   - Include persistent storage (LocalStorage with pre-loaded realistic sample data).
+6. files       -> Exactly 3 files: index.html, style.css, script.js.
 """
 
 
-def architect_prompt(plan_json: str) -> str:
-    return rf"""You are the ARCHITECT agent for an advanced AI web app builder.
-You receive a structured project plan and must output COMPLETE, PRODUCTION-QUALITY source code
-for every file. Not stubs. Not skeletons. Not pseudocode. REAL, WORKING CODE.
+def html_prompt(plan_json: str, user_prompt: str) -> str:
+    return f"""You are the LEAD UI/UX & FRONTEND ARCHITECT.
+You are generating the COMPLETE `index.html` file for a world-class, modern, feature-rich web application.
+
+USER PROMPT:
+{user_prompt}
 
 PROJECT PLAN:
 {plan_json}
 
-YOUR JOB: For each file in the plan, produce an ImplementationTask with:
-  • filepath         → exact path from the plan (e.g. "index.html")
-  • task_description → detailed paragraph describing what this file contains
-  • full_code        → THE COMPLETE FILE CONTENT, ready to save and run as-is
-
 ════════════════════════════════════════════════════════════════
-QUALITY MANDATE — READ THIS BEFORE WRITING ANY CODE
+MANDATORY UI ARCHITECTURE (LINEAR / VERCEL / STRIPE SAAS AESTHETICS)
 ════════════════════════════════════════════════════════════════
 
-For SIMPLE apps: generate clean, complete, working code (~100-300 lines per file).
-For MODERATE apps: generate thorough code with all features (~200-500 lines per file).
-For COMPLEX apps: generate comprehensive, production-grade code (500-1500+ lines per file).
+Your HTML MUST be rich, semantic, and fully structured. It must include:
 
-NEVER:
-  ✗ Write "// TODO: implement this"
-  ✗ Write "// ... rest of the code"
-  ✗ Write "// add more categories here"
-  ✗ Leave any function body empty or as a stub
-  ✗ Use alert() for UI feedback — use custom DOM elements
-  ✗ Use external libraries (no jQuery, no Chart.js, no Bootstrap)
-  ✗ Use <iframe>, <frame>, or external embeds
-  ✗ Reference files that don't exist in the plan
+1. HEAD SECTION:
+   - `<meta charset="UTF-8">` and `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
+   - Page `<title>` matching the plan title
+   - Google Fonts link for 'Plus Jakarta Sans', 'Inter', or 'Space Grotesk'
+   - `<link rel="stylesheet" href="style.css">`
 
-ALWAYS:
-  ✓ Implement every single feature listed in the plan's features array
-  ✓ Write every function completely, with full logic
-  ✓ Use CSS custom properties (variables) for theming
-  ✓ LocalStorage for all persistent data (never assume a backend)
-  ✓ Vanilla JS only — no frameworks, no CDN imports beyond Google Fonts
-  ✓ Responsive design using CSS Grid and Flexbox
-  ✓ Smooth hover transitions and micro-animations
-  ✓ Semantic HTML5 elements (nav, main, section, article, aside, header, footer)
-  ✓ All interactive elements have unique IDs or data attributes
-  ✓ Error handling for all localStorage.parse() calls (try/catch)
+2. APP LAYOUT SHELL (`<div class="app-layout">`):
+   A. TOP HEADER (`<header class="topbar">`):
+      - Brand logo icon + Application Name + Version badge
+      - Quick Search Bar (`<input type="text" id="globalSearch" placeholder="Search tasks, subjects, notes...">`)
+      - Quick Action Buttons (e.g. "+ New Task", "+ New Subject")
+      - Live Status / Streak Badge (e.g. `<div class="streak-badge" id="streakBadge">🔥 <span>0</span> Day Streak</div>`)
+      - Productivity Score Badge (e.g. `<div class="score-badge" id="headerScoreBadge">⚡ <span>0%</span> Score</div>`)
+      - Theme Toggle Button (`<button id="themeToggleBtn" class="theme-btn" title="Toggle Theme">🌙</button>`)
+      - Mobile Menu Toggle Hamburger Button (`<button id="mobileMenuBtn" class="mobile-menu-btn">☰</button>`)
 
-════════════════════════════════════════════════════════════════
-DESIGN SYSTEM — USE FOR ALL APPS
-════════════════════════════════════════════════════════════════
+   B. SIDEBAR NAVIGATION (`<aside class="sidebar" id="sidebar">`):
+      - App Brand block
+      - Navigation Items with icons and data-tab attributes:
+        * `<button class="nav-item active" data-tab="dashboard">📊 Dashboard</button>`
+        * `<button class="nav-item" data-tab="planner">📅 Study Planner & Tasks</button>`
+        * `<button class="nav-item" data-tab="pomodoro">⏱️ Pomodoro Timer</button>`
+        * `<button class="nav-item" data-tab="subjects">📚 Subjects & Topics</button>`
+        * `<button class="nav-item" data-tab="analytics">📈 Productivity Analytics</button>`
+        * `<button class="nav-item" data-tab="exams">🎯 Exam Countdown</button>`
+      - Sidebar Footer with Quick Stats & Data Actions (Export CSV, Clear Data)
 
-Use this CSS variable pattern for theming. Adapt colors to suit the app:
+   C. MAIN CONTENT AREA (`<main class="main-content">`):
+      Every tab below must be present as `<section class="tab-pane active/inactive" id="tab-TABNAME">`:
 
-:root {{
-  /* Light theme defaults */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-hover: #f1f5f9;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border: #e2e8f0;
-  --accent: #6366f1;           /* Adapt: teal, emerald, rose, amber etc */
-  --accent-hover: #4f46e5;
-  --accent-light: #eef2ff;
-  --danger: #ef4444;
-  --danger-light: #fef2f2;
-  --success: #22c55e;
-  --success-light: #f0fdf4;
-  --warning: #f59e0b;
-  --warning-light: #fffbeb;
-  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
-  --radius: 12px;
-  --radius-sm: 8px;
-  --transition: all 0.2s ease;
-}}
+      1. TAB 1: OVERVIEW DASHBOARD (`id="tab-dashboard"`):
+         - Welcome Banner with greeting, current date, and motivational quote
+         - Top Metrics Grid (4 Stat Cards):
+           * Card 1: Daily Productivity Score (large percentage + progress circle/bar)
+           * Card 2: Study Time Today (hours & minutes formatted)
+           * Card 3: Tasks Completed (e.g. 5/8 tasks done + mini progress bar)
+           * Card 4: Study Streak (consecutive days with flame icon)
+         - 2-Column Dashboard Grid:
+           * Left: Today's Focus Checklist (priority tasks, quick check, quick add)
+           * Right: Mini Pomodoro Widget (quick start) + Upcoming Exam Countdown widget cards
+         - Subject Progress Summary section with visual progress bars
 
-[data-theme="dark"] {{
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-card: #1e293b;
-  --bg-hover: #334155;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border: #334155;
-  --accent-light: #1e1b4b;
-  --danger-light: #1c0404;
-  --success-light: #052e16;
-  --warning-light: #1c1001;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5);
-}}
+      2. TAB 2: STUDY PLANNER & TASKS (`id="tab-planner"`):
+         - Toolbar / Filter Bar:
+           * Search Input (`id="taskSearchInput"`)
+           * Subject Filter Dropdown (`id="taskSubjectFilter"`)
+           * Priority Filter Dropdown (`id="taskPriorityFilter"` with All, High, Medium, Low)
+           * Status Filter (All / Pending / Completed)
+           * "+ Add Task" button (`id="openAddTaskBtn"`)
+         - Task List Container (`id="tasksListContainer"`):
+           * Displays cards/items with checkbox, title, subject tag, topic tag, priority badge (High/Med/Low), estimated minutes, due date, action buttons (Edit, Delete, Start Timer on Task)
+         - Empty state placeholder if no tasks match
 
-════════════════════════════════════════════════════════════════
-PATTERN LIBRARY — COPY THESE EXACT PATTERNS
-════════════════════════════════════════════════════════════════
+      3. TAB 3: POMODORO TIMER (`id="tab-pomodoro"`):
+         - Timer Mode Tabs: "Work Focus (25m)", "Short Break (5m)", "Long Break (15m)"
+         - Main Timer Display: Huge digital countdown timer (`id="timerDisplay"`, e.g. `25:00`)
+         - Circular or horizontal progress indicator showing elapsed percentage
+         - Active Task Banner: "Currently Focusing On: [Select a task or General Study]"
+         - Timer Controls Bar: Start Button (`id="timerStartBtn"`), Pause Button (`id="timerPauseBtn"`), Reset Button (`id="timerResetBtn"`), Skip Phase (`id="timerSkipBtn"`)
+         - Sound toggle & Auto-start break toggles
+         - Session Tracker: "Today's Completed Pomodoros: X sessions (Y hrs studied)"
+         - Recent Session History Log list
 
-── PATTERN: LocalStorage CRUD ──
-// Always wrap parse in try/catch
-function loadData(key, fallback = []) {{
-  try {{ return JSON.parse(localStorage.getItem(key)) || fallback; }}
-  catch {{ return fallback; }}
-}}
-function saveData(key, value) {{
-  localStorage.setItem(key, JSON.stringify(value));
-}}
+      4. TAB 4: SUBJECTS & TOPICS (`id="tab-subjects"`):
+         - Header with "+ Add Subject" button (`id="openAddSubjectBtn"`)
+         - Grid of Subject Cards (`id="subjectsGrid"`):
+           * Each card has: Subject Title, Color indicator, Target Hours/Week vs Studied Hours, Animated Progress Bar, Topic List with completion checkboxes, "+ Add Topic" inline, Edit & Delete buttons
 
-── PATTERN: Dark/Light Theme Toggle ──
-// HTML: <button id="themeToggle">🌙</button>
-// Add data-theme="" to <html> tag
-const root = document.documentElement;
-function toggleTheme() {{
-  const isDark = root.getAttribute('data-theme') === 'dark';
-  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  saveData('theme', isDark ? 'light' : 'dark');
-  document.getElementById('themeToggle').textContent = isDark ? '🌙' : '☀️';
-}}
-// On page load:
-const savedTheme = loadData('theme', 'light');
-root.setAttribute('data-theme', savedTheme);
+      5. TAB 5: PRODUCTIVITY ANALYTICS (`id="tab-analytics"`):
+         - Header with "Export CSV" button (`id="exportAnalyticsBtn"`)
+         - Weekly Study Hours Bar Chart Container (`id="weeklyChartContainer"`)
+         - Subject-wise Distribution Bars (`id="subjectDistributionContainer"`)
+         - Productivity Score Breakdown (Completed vs Planned, Streak history)
+         - Key Insights summary cards
 
-── PATTERN: CSS-only Bar Chart ──
-/* In CSS */
-.bar-chart {{ display: flex; flex-direction: column; gap: 10px; }}
-.bar-item {{ display: flex; align-items: center; gap: 12px; }}
-.bar-label {{ width: 100px; font-size: 13px; color: var(--text-secondary); }}
-.bar-track {{ flex: 1; height: 10px; background: var(--border); border-radius: 999px; overflow: hidden; }}
-.bar-fill {{ height: 100%; background: var(--accent); border-radius: 999px;
-             transition: width 0.6s ease; }}
-.bar-value {{ width: 60px; font-size: 13px; text-align: right; color: var(--text-primary); }}
+      6. TAB 6: EXAM COUNTDOWN (`id="tab-exams"`):
+         - Header with "+ Add Exam" button (`id="openAddExamBtn"`)
+         - Grid of Exam Cards (`id="examsGrid"`):
+           * Displays Exam Name, Subject, Target Date, Days & Hours Remaining countdown badge with urgency colors (Red for <3 days, Orange for <7 days, Green for 7+ days), Syllabus completion progress bar
 
-// In JS: create bars dynamically
-function renderBarChart(container, items) {{
-  container.innerHTML = '';
-  const max = Math.max(...items.map(i => i.value), 1);
-  items.forEach(item => {{
-    const pct = Math.round((item.value / max) * 100);
-    container.innerHTML += `
-      <div class="bar-item">
-        <span class="bar-label">${{item.label}}</span>
-        <div class="bar-track"><div class="bar-fill" style="width:${{pct}}%;background:${{item.color}}"></div></div>
-        <span class="bar-value">${{item.formatted}}</span>
-      </div>`;
-  }});
-}}
+3. MODAL DIALOGS:
+   - Add/Edit Task Modal (`id="taskModal"` with inputs for title, subject select, topic, priority select, estimated minutes, date)
+   - Add/Edit Subject Modal (`id="subjectModal"` with inputs for name, color picker/options, target hours per week)
+   - Add/Edit Exam Modal (`id="examModal"` with inputs for name, subject select, exam date, syllabus note)
 
-── PATTERN: Modal Dialog ──
-/* CSS */
-.modal-overlay {{ position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;
-                  align-items:center;justify-content:center;z-index:1000;padding:20px; }}
-.modal-overlay.open {{ display:flex; }}
-.modal {{ background:var(--bg-card);border-radius:var(--radius);padding:28px;
-          width:100%;max-width:480px;box-shadow:var(--shadow-lg);
-          animation:slideUp 0.2s ease; }}
-@keyframes slideUp {{ from{{transform:translateY(20px);opacity:0}} to{{transform:translateY(0);opacity:1}} }}
-.modal-header {{ display:flex;justify-content:space-between;align-items:center;margin-bottom:20px; }}
-.modal-close {{ background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted); }}
+4. TOAST NOTIFICATION CONTAINER:
+   - `<div id="toast" class="toast"></div>`
 
-// JS
-function openModal(id) {{ document.getElementById(id).classList.add('open'); }}
-function closeModal(id) {{ document.getElementById(id).classList.remove('open'); }}
-// Close on overlay click:
-document.querySelectorAll('.modal-overlay').forEach(m => {{
-  m.addEventListener('click', e => {{ if(e.target === m) m.classList.remove('open'); }});
-}});
-
-── PATTERN: CSV Export ──
-function exportCSV(data, filename) {{
-  if (!data.length) return;
-  const headers = Object.keys(data[0]);
-  const rows = data.map(row => headers.map(h => `"${{String(row[h]).replace(/"/g,'""')}}"`).join(','));
-  const csv = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], {{ type: 'text/csv' }});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-}}
-
-── PATTERN: Search/Filter ──
-function filterItems(items, query, fields) {{
-  if (!query.trim()) return items;
-  const q = query.toLowerCase();
-  return items.filter(item => fields.some(f => String(item[f] || '').toLowerCase().includes(q)));
-}}
-
-── PATTERN: Toast Notification ──
-/* CSS */
-.toast {{ position:fixed;bottom:24px;right:24px;padding:12px 20px;
-          border-radius:var(--radius-sm);color:white;font-size:14px;
-          transform:translateY(80px);opacity:0;transition:all 0.3s ease;
-          z-index:9999;max-width:300px;box-shadow:var(--shadow-lg); }}
-.toast.show {{ transform:translateY(0);opacity:1; }}
-.toast.success {{ background:var(--success); }}
-.toast.error   {{ background:var(--danger);   }}
-.toast.warning {{ background:var(--warning);  }}
-
-// JS
-function showToast(message, type='success', duration=3000) {{
-  const t = document.getElementById('toast');
-  t.textContent = message; t.className = `toast ${{type}} show`;
-  setTimeout(() => t.classList.remove('show'), duration);
-}}
-
-── PATTERN: Responsive Dashboard Layout ──
-/* CSS */
-.app-layout {{ display:flex;min-height:100vh; }}
-.sidebar {{ width:260px;background:var(--bg-secondary);border-right:1px solid var(--border);
-            padding:24px 0;flex-shrink:0;transition:var(--transition); }}
-.main-content {{ flex:1;overflow-y:auto;padding:24px; }}
-.stats-grid {{ display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px; }}
-.stat-card {{ background:var(--bg-card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow); }}
-.content-grid {{ display:grid;grid-template-columns:1fr 380px;gap:20px; }}
-@media(max-width:1024px) {{ .content-grid {{ grid-template-columns:1fr; }} }}
-@media(max-width:768px) {{
-  .sidebar {{ position:fixed;left:-260px;top:0;height:100%;z-index:100; }}
-  .sidebar.open {{ left:0;box-shadow:var(--shadow-lg); }}
-  .main-content {{ padding:16px; }}
-}}
-
-── PATTERN: Tabs/Sections ──
-// HTML: <div class="tab-btn active" data-tab="overview">Overview</div>
-// Sections: <section id="tab-overview" class="tab-content active">...</section>
-function initTabs() {{
-  document.querySelectorAll('.tab-btn').forEach(btn => {{
-    btn.addEventListener('click', () => {{
-      const target = btn.dataset.tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + target).classList.add('active');
-    }});
-  }});
-}}
-
-── PATTERN: Form Validation ──
-function validateForm(fields) {{
-  let valid = true;
-  fields.forEach({{ id, message }}) => {{
-    const el = document.getElementById(id);
-    const err = document.getElementById(id + '-err');
-    if (!el.value.trim()) {{
-      if(err) {{ err.textContent = message; err.style.display = 'block'; }}
-      el.style.borderColor = 'var(--danger)';
-      valid = false;
-    }} else {{
-      if(err) err.style.display = 'none';
-      el.style.borderColor = '';
-    }}
-  }});
-  return valid;
-}}
-
-── PATTERN: Pomodoro Timer ──
-let timerInterval = null, secondsLeft = 25 * 60, phase = 'work';
-const PHASES = {{ work: 25*60, short: 5*60, long: 15*60 }};
-function startTimer() {{
-  if (timerInterval) return;
-  timerInterval = setInterval(() => {{
-    secondsLeft--;
-    updateTimerDisplay();
-    if (secondsLeft <= 0) {{ clearInterval(timerInterval); timerInterval = null; onTimerEnd(); }}
-  }}, 1000);
-}}
-function pauseTimer() {{ clearInterval(timerInterval); timerInterval = null; }}
-function resetTimer(p = 'work') {{
-  clearInterval(timerInterval); timerInterval = null;
-  phase = p; secondsLeft = PHASES[p]; updateTimerDisplay();
-}}
-function updateTimerDisplay() {{
-  const m = String(Math.floor(secondsLeft/60)).padStart(2,'0');
-  const s = String(secondsLeft%60).padStart(2,'0');
-  document.getElementById('timerDisplay').textContent = `${{m}}:${{s}}`;
-}}
-
-── PATTERN: Streak Counter ──
-function updateStreak(key) {{
-  const data = loadData(key, {{ streak: 0, lastDate: null }});
-  const today = new Date().toDateString();
-  const yesterday = new Date(Date.now() - 86400000).toDateString();
-  if (data.lastDate === today) return data.streak;
-  if (data.lastDate === yesterday) data.streak++;
-  else data.streak = 1;
-  data.lastDate = today;
-  saveData(key, data);
-  return data.streak;
-}}
+5. FOOTER & SCRIPTS:
+   - `<script src="script.js"></script>` at the bottom of body.
 
 ════════════════════════════════════════════════════════════════
-RULES FOR YOUR OUTPUT
+OUTPUT RULES
 ════════════════════════════════════════════════════════════════
-1. full_code must be the COMPLETE file — every line, ready to save and run.
-2. Implement EVERY feature listed in the plan's features array. Do not skip any.
-3. Order: index.html → style.css → script.js
-4. index.html must link style.css via <link> and script.js via <script src> at end of body.
-5. For complex apps, script.js will naturally be 500-1500+ lines. That is expected and correct.
-6. Always include a <div id="toast" class="toast"></div> and toast JS for user feedback.
-7. All data must persist via LocalStorage — never assume a backend or server.
-8. The app must work perfectly when opened as a local HTML file or via iframe srcdoc.
-9. DO NOT use any external JS libraries. Pure vanilla JS only.
-10. FONTS: You may use one Google Fonts import in index.html (Inter or similar).
+- Provide the COMPLETE, 100% finished `index.html` code.
+- NEVER use placeholders, ellipses, or "// TODO".
+- Every interactive element MUST have descriptive `id`, `class`, and `data-*` attributes so that CSS and JS can style and bind to them flawlessly.
+"""
+
+
+def css_prompt(plan_json: str, html_code: str) -> str:
+    return f"""You are the LEAD DESIGN SYSTEM ARCHITECT & CSS ENGINEER.
+You are generating the COMPLETE `style.css` for a world-class, premium SaaS web application.
+
+PROJECT PLAN:
+{plan_json}
+
+HTML MARKUP BEING STYLED:
+{html_code}
+
+════════════════════════════════════════════════════════════════
+DESIGN SPECIFICATIONS (PREMIUM MODERN SAAS / DARK & LIGHT MODE)
+════════════════════════════════════════════════════════════════
+
+Your CSS must provide an ultra-clean, modern, polished design (similar to Linear.app, Vercel, Stripe).
+
+1. CSS DESIGN TOKENS & THEMING:
+   - Root `:root` (Light Theme) and `[data-theme="dark"]` (Dark Theme default):
+     * Backgrounds: `--bg-main`, `--bg-card`, `--bg-sidebar`, `--bg-card-hover`, `--bg-input`, `--bg-modal`
+     * Text: `--text-main`, `--text-secondary`, `--text-muted`, `--text-inverse`
+     * Accents: `--primary` (e.g. vibrant indigo `#6366f1` or violet `#7c3aed`), `--primary-hover`, `--primary-glow`, `--primary-light`
+     * Status Colors:
+       - `--success` / `--success-light` (Emerald for completed, low priority, good streak)
+       - `--warning` / `--warning-light` (Amber for medium priority, upcoming deadlines)
+       - `--danger` / `--danger-light` (Rose/Red for high priority, urgent exams, delete buttons)
+       - `--info` / `--info-light` (Sky blue for pomodoro, tips)
+     * Borders: `--border-color`, `--border-focus`, `--border-subtle`
+     * Shadows: `--shadow-sm`, `--shadow-md`, `--shadow-lg`, `--shadow-glow`
+     * Radii: `--radius-sm` (6px), `--radius-md` (10px), `--radius-lg` (16px), `--radius-full` (9999px)
+     * Transitions: `--transition-fast` (0.15s ease), `--transition-normal` (0.25s ease)
+
+2. CORE STYLES & RESET:
+   - `* {{ box-sizing: border-box; margin: 0; padding: 0; }}`
+   - `body`: Smooth antialiased font (`'Plus Jakarta Sans', 'Inter', sans-serif`), background transitions, min-height 100vh.
+
+3. APP LAYOUT (FLEX & CSS GRID):
+   - `.app-layout`: Flex container with sidebar + main-content
+   - `.topbar`: Modern header with glassmorphic blur, 1px border-bottom, flex alignment, gap, search bar, badges, theme toggle button
+   - `.sidebar`: Width 260px, fixed or flex-sticky, sleek nav items with active pill highlight, badge counters, hover glow, border-right
+   - `.main-content`: Flex 1, padding 28px, max-width 1400px, scrollable, smooth view transitions
+   - `.tab-pane`: Display none by default; `.tab-pane.active` displays flex/grid with smooth fade-in animation (`@keyframes fadeIn`)
+
+4. COMPONENT STYLING:
+   - Metric / Stat Cards: Glassmorphism effect, subtle border, gradient accent bar, large bold values, trend indicators
+   - Buttons: `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.btn-icon` with custom hover elevation, active scale(0.98), focus rings
+   - Task Cards: Clean list items with custom styled checkboxes (`accent-color` or custom checkmark), strikethrough animation for completed tasks, priority tags with soft colored backgrounds and text
+   - Pomodoro Timer Widget:
+     * Mode pills with active highlights
+     * Huge crisp digital display with glow effect
+     * Large, inviting Start/Pause/Reset action buttons
+     * Session dots / streak counter
+   - Subject Cards: Colorful top border/accent, progress bar with smooth transition width and gradient fill, topic checkboxes
+   - Analytics Charts & Bars:
+     * Weekly bar chart using pure CSS Flexbox bars with heights, day labels, tooltips on hover, and value indicators
+     * Category distribution bars with percentages
+   - Exam Countdown Cards: Urgency-colored badges (urgent pulsating red badge, warning amber badge, safe green badge), days remaining big counter
+   - Modals: Fullscreen backdrop blur overlay, centered modal box with smooth scale-up entry animation, clean form groups, styled inputs, close button
+   - Toast: Floating notification at bottom-right with slide-up animation, success/error/warning variants
+
+5. RESPONSIVE DESIGN:
+   - On screens < 1024px: Adjust grid columns
+   - On screens < 768px:
+     * Sidebar becomes off-canvas drawer (`transform: translateX(-100%)` / `.sidebar.open { transform: translateX(0) }`)
+     * Header adjusts search bar and stacks buttons
+     * Metric grid becomes 1-2 columns
+     * Touch-friendly button padding
+
+════════════════════════════════════════════════════════════════
+OUTPUT RULES
+════════════════════════════════════════════════════════════════
+- Output the COMPLETE `style.css` code.
+- Make sure EVERY class, ID, and tag in `index.html` has gorgeous, finished CSS.
+- NO unstyled elements, NO default browser inputs or raw buttons.
+"""
+
+
+def js_prompt(plan_json: str, html_code: str, css_code: str) -> str:
+    return f"""You are the PRINCIPAL FULL-STACK JAVASCRIPT ENGINEER.
+You are generating the COMPLETE `script.js` file for a world-class, production-ready web application.
+
+PROJECT PLAN:
+{plan_json}
+
+HTML STRUCTURE:
+{html_code}
+
+CSS STYLING REFERENCE:
+{css_code}
+
+════════════════════════════════════════════════════════════════
+MANDATORY JAVASCRIPT ARCHITECTURE & LOGIC
+════════════════════════════════════════════════════════════════
+
+Your JavaScript code must be modular, robust, and 100% functional. Implement EVERY feature:
+
+1. LOCALSTORAGE STATE MANAGEMENT & DEFAULT SEED DATA:
+   - If LocalStorage is empty on first load, populate it with rich, realistic default sample data so the app looks alive and impressive immediately:
+     * 3-4 Sample Subjects (e.g., "Mathematics" [color: #6366f1, target: 10 hrs], "Physics" [color: #06b6d4, target: 8 hrs], "Computer Science" [color: #10b981, target: 12 hrs], "Literature" [color: #f59e0b, target: 5 hrs]) with sub-topics
+     * 5-6 Sample Tasks with mixed priorities (High, Medium, Low), subjects, estimated minutes, and dates (some completed, some pending)
+     * 2 Sample Exams (e.g. "Final Mathematics Exam" 5 days away, "Physics Midterm" 12 days away)
+     * Initial Pomodoro stats and a 3-day study streak
+   - Helper functions: `loadState(key, fallback)`, `saveState(key, value)`. Always safe with try/catch.
+
+2. TAB NAVIGATION & ROUTING:
+   - Handle clicks on all `.nav-item` buttons and switch visible `.tab-pane` smoothly.
+   - Update active state on navigation buttons.
+   - Mobile sidebar toggle (open/close on mobile hamburger click).
+
+3. TASK PLANNER CRUD & FILTERING:
+   - Render tasks dynamically into `#tasksListContainer` and mini-checklist on dashboard.
+   - Add new task (via modal or inline form) with validation.
+   - Toggle task complete (updates strike-through, completion timestamp, recalculates daily productivity score and streak).
+   - Delete task with animation and toast notification.
+   - Edit task capability.
+   - Multi-Filter & Search Engine:
+     * Live search by keyword in title/topic
+     * Filter by Subject
+     * Filter by Priority (High / Medium / Low)
+     * Filter by Status (All / Pending / Completed)
+     * Instant re-rendering on any filter change.
+
+4. POMODORO TIMER ENGINE:
+   - Timer state: `work` (25m), `shortBreak` (5m), `longBreak` (15m), `timeRemaining`, `isRunning`, `intervalId`, `completedSessions`.
+   - Start, Pause, Reset, and Skip phase functions.
+   - Smooth countdown updating `#timerDisplay` and document title (e.g. `(24:50) Study Planner`).
+   - Web Audio API notification beep when timer ends (using `new (window.AudioContext || window.webkitAudioContext)()` - synthesizes pleasant chime sound without any external audio file!).
+   - On work session completion: log study session, increment study minutes for the active subject, update daily total, and trigger toast celebration.
+
+5. STUDY STREAK & DAILY PRODUCTIVITY SCORE ENGINE:
+   - Streak tracking: Checks last active study date vs today. If studied yesterday/today, maintains/increments streak; updates `#streakBadge` and dashboard card.
+   - Daily Productivity Score Algorithm:
+     * Formula combining: Task completion rate (40%), Pomodoro focus hours (40%), Subject goal progress (20%).
+     * Outputs 0 - 100%. Updates score badges, progress circles, and visual rating ("Productive", "On Track", "Supercharged").
+
+6. SUBJECTS & TOPICS MANAGEMENT:
+   - Render subject cards with progress bars (calculated from studied hours vs weekly target).
+   - Add new subject modal and topic checklist toggles.
+   - Delete / Edit subject.
+
+7. EXAM COUNTDOWN ENGINE:
+   - Calculates exact days and hours remaining for each exam.
+   - Sets dynamic badge color (Red <= 3 days, Orange <= 7 days, Green > 7 days).
+   - Add exam modal handler and delete exam handler.
+
+8. PRODUCTIVITY ANALYTICS & WEEKLY BAR CHART:
+   - Renders weekly study hours bar chart with dynamic heights for Mon-Sun based on logged study sessions.
+   - Subject distribution breakdown percentages.
+   - CSV Export function: builds CSV string of all tasks & study logs and triggers instant browser file download.
+
+9. THEME TOGGLE (DARK / LIGHT):
+   - Toggles `data-theme` attribute on `document.documentElement`.
+   - Persists user choice in `localStorage`.
+   - Updates icon (`🌙` / `☀️`).
+
+10. MODAL & TOAST MANAGERS:
+    - `openModal(modalId)`, `closeModal(modalId)`.
+    - Close modals on clicking backdrop or press `Escape` key.
+    - `showToast(message, type)`: displays smooth toast notification for 3 seconds.
+
+════════════════════════════════════════════════════════════════
+OUTPUT RULES
+════════════════════════════════════════════════════════════════
+- Output the COMPLETE `script.js` code.
+- Write EVERY function in full. NO stubs, NO comments replacing code.
+- Attach all event listeners after `DOMContentLoaded`.
 """
 
 
 def coder_system_prompt() -> str:
-    return """You are the CODER agent. Your only job is to save a file using write_file.
-
-WORKFLOW — follow this EXACTLY:
-1. Call read_file(filepath) to see any existing content.
-2. Call write_file(filepath, full_code) with the COMPLETE file content.
-   - full_code comes from your task description's 'full_code' field.
-   - Do NOT truncate it. Write every single line.
-3. Verify: call read_file(filepath) again to confirm it was saved.
-4. If read_file returns empty, call write_file again.
-
-CRITICAL:
-- You MUST call write_file. Responding with text only is a failure.
-- The content argument must be the COMPLETE file — not a summary, not pseudocode.
-- HTML files must have <!DOCTYPE html> and working <link>/<script> tags.
-- JS files must have all functions implemented and all event listeners attached.
-"""
+    return "You are the Coder Agent. Produce complete, working code."

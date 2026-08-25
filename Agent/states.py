@@ -19,82 +19,76 @@ class Plan(BaseModel):
     name: str = Field(
         description=(
             "Lowercase app name, underscores only, no spaces. "
-            "Examples: 'finance_dashboard', 'study_planner', 'calculator_app'."
+            "Examples: 'study_planner', 'finance_dashboard', 'habit_tracker'."
         )
+    )
+    title: str = Field(
+        default="Web Application",
+        description="User-facing title of the app (e.g. 'Smart Study Planner & Productivity Dashboard')"
     )
     description: str = Field(
         description=(
-            "2-3 sentences describing what the app does, its main purpose, "
-            "and who it is for."
+            "2-3 sentences describing what the app does, its target audience, "
+            "and core workflows."
         )
     )
     techstack: str = Field(
-        description="Always 'HTML, CSS, JavaScript' for frontend apps. No frameworks."
+        default="HTML, CSS, JavaScript",
+        description="Always 'HTML, CSS, JavaScript' for pure frontend apps. No frameworks."
     )
     complexity: Literal["simple", "moderate", "complex"] = Field(
-        default="moderate",
+        default="complex",
         description=(
             "App complexity level. "
-            "'simple' = single-purpose tool (calculator, timer, converter). "
-            "'moderate' = multi-feature utility (todo+categories, quiz app). "
-            "'complex' = multi-section dashboard or productivity system with "
-            "LocalStorage, charts, filters, themes, and 10+ features."
+            "'simple' = single-purpose tool. "
+            "'moderate' = multi-feature utility. "
+            "'complex' = multi-section dashboard with LocalStorage, charts, filters, modals, and comprehensive UI."
         )
     )
     features: list[str] = Field(
         description=(
-            "Exhaustive list of ALL features the app must have. "
-            "For simple apps: 5-8 features. "
-            "For moderate apps: 8-12 features. "
-            "For complex/dashboard apps: 12-20 features. "
-            "Each feature must be concrete and testable — describe what the user "
-            "can do, not how it looks. Include every feature the user mentioned, "
-            "plus obvious supporting features needed for completeness."
+            "Exhaustive list of ALL features to be implemented. "
+            "List 12-20 concrete, testable features for complex apps. Include every detail requested by the user."
         )
     )
     files: list[File] = Field(
+        default=[
+            File(path="index.html", purpose="Complete semantic HTML structure, sidebar, dashboard, tabs, and modals"),
+            File(path="style.css", purpose="Modern design system, dark/light theme, responsive grid, animations"),
+            File(path="script.js", purpose="Full application logic, LocalStorage state, timers, charts, and interactivity"),
+        ],
+        description="Exactly 3 files: index.html, style.css, script.js."
+    )
+
+
+class HTMLCode(BaseModel):
+    code: str = Field(
         description=(
-            "Exactly 3 files for web apps: index.html, style.css, script.js. "
-            "No more, no less."
+            "The COMPLETE, exhaustive index.html file content. "
+            "Must start with <!DOCTYPE html> and contain all layout sections, sidebar, header, tabs, metric cards, "
+            "modals, buttons with IDs, and form elements. NEVER truncate."
         )
     )
 
 
-class ImplementationTask(BaseModel):
-    filepath: str = Field(
-        description="Exact path — must match one of the paths in the Plan's files list."
-    )
-    task_description: str = Field(
+class CSSCode(BaseModel):
+    code: str = Field(
         description=(
-            "COMPLETE implementation spec: every HTML id/class, every CSS rule, "
-            "every JS function signature and body logic. Must be long and detailed. "
-            "For complex apps this should be 3-5 paragraphs."
-        )
-    )
-    full_code: str = Field(
-        description=(
-            "The COMPLETE, READY-TO-SAVE file content. "
-            "This must be 100% working code — not pseudocode, not a skeleton. "
-            "Include every tag, rule, and function. "
-            "For complex apps, script.js will naturally be 500-1500+ lines — "
-            "that is expected and correct. Never truncate or abbreviate."
+            "The COMPLETE, exhaustive style.css file content. "
+            "Must include full design system tokens, dark & light theme, glassmorphism, responsive grid, "
+            "hover effects, animations, modal styling, and component styles for every HTML element. NEVER truncate."
         )
     )
 
 
-class TaskPlan(BaseModel):
-    implementation_steps: list[ImplementationTask] = Field(
+class JSCode(BaseModel):
+    code: str = Field(
         description=(
-            "One task per file, ordered: index.html first, style.css second, script.js third."
+            "The COMPLETE, exhaustive script.js file content. "
+            "Must include full LocalStorage CRUD, default initial sample data, timer engine, productivity score algorithm, "
+            "streak counter, event handlers for every button/tab/form, CSV export, and toast notifications. NEVER truncate."
         )
     )
-    model_config = ConfigDict(extra="allow")
-
-
-class CoderState(BaseModel):
-    task_plan: TaskPlan
-    current_step_idx: int = Field(0)
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 # ── LangGraph graph state ──────────────────────────────────────────────────────
@@ -102,6 +96,7 @@ class CoderState(BaseModel):
 class AppState(TypedDict, total=False):
     user_prompt: str
     plan: Optional[Plan]
-    task_plan: Optional[TaskPlan]
-    coder_state: Optional[CoderState]
+    html_code: Optional[str]
+    css_code: Optional[str]
+    js_code: Optional[str]
     status: str
