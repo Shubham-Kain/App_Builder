@@ -3,7 +3,6 @@ import time
 import random
 import pathlib
 from dotenv import load_dotenv
-from openai import RateLimitError, APIStatusError
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
 from google.api_core.exceptions import ResourceExhausted, GoogleAPICallError
@@ -21,11 +20,14 @@ from Agent.tools import (
 
 load_dotenv()
 
-# ── Model list (free-tier Gemini models, best → fallback) ────────────────────
+# ── Model list (Gemini models, best → fallback) ──────────────────────────────
+# gemini-2.5-flash is the most capable for generating complex, long code files.
+# Lite variants are used as fallback when the primary hits rate limits.
 _MODELS = [
     "gemini-3.1-flash-lite",
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
+    "gemini-1.5-flash",
 ]
 
 _API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
@@ -39,17 +41,24 @@ if not _API_KEY:
 def _make_llm(model: str) -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         model=model,
-        temperature=0.2,
+        temperature=0.3,       # slightly higher creativity for richer code
         google_api_key=_API_KEY,
-        timeout=120,
+        timeout=300,           # complex apps need up to 5 minutes to generate
     )
 
 
 
+try:
+    from openai import RateLimitError, APIStatusError
+except ImportError:
+    RateLimitError = type("RateLimitError", (Exception,), {})
+    APIStatusError = type("APIStatusError", (Exception,), {})
+
+
 def _invoke_with_fallback(chain_factory, prompt: str, label: str = "LLM"):
     """
-    Try _MODELS in order. For each model retry up to 3× on 429 with backoff.
-    chain_factory: callable(llm) → LangChain Runnable
+    Try _MODELS in order. For each model retry up to 3x on 429 with backoff.
+    chain_factory: callable(llm) -> LangChain Runnable
     """
     last_exc = None
     for model in _MODELS:
@@ -61,23 +70,35 @@ def _invoke_with_fallback(chain_factory, prompt: str, label: str = "LLM"):
                 result = chain.invoke(prompt)
                 if result is not None:
                     return result
-                print(f"  [{label}] got None from {model} — next model")
+                print(f"  [{label}] got None from {model} -- next model")
                 break
             except (RateLimitError, ResourceExhausted) as e:
                 wait = 2 ** attempt + random.uniform(0, 1)
-                print(f"  [{label}] 429 on {model} attempt {attempt}/3 — wait {wait:.1f}s")
+                print(f"  [{label}] 429 on {model} attempt {attempt}/3 -- wait {wait:.1f}s")
                 last_exc = e
                 if attempt < 3:
                     time.sleep(wait)
                 else:
-                    print(f"  [{label}] retries exhausted — next model")
-            except (APIStatusError, GoogleAPICallError) as e:
+                    print(f"  [{label}] retries exhausted -- next model")
+            except (APIStatusError, GoogleAPICallError, Exception) as e:
+                err_str = str(e).lower()
                 status_code = getattr(e, "status_code", None) or getattr(e, "code", None)
-                if status_code == 404:
-                    print(f"  [{label}] {model} not found — next model")
+                if status_code in (404, 400) or "404" in err_str or "not found" in err_str or "not supported" in err_str or "invalid argument" in err_str:
+                    print(f"  [{label}] {model} not available ({e}) -- next model")
                     last_exc = e
                     break
-                raise
+                elif "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str:
+                    wait = 2 ** attempt + random.uniform(0, 1)
+                    print(f"  [{label}] 429/quota on {model} attempt {attempt}/3 -- wait {wait:.1f}s")
+                    last_exc = e
+                    if attempt < 3:
+                        time.sleep(wait)
+                    else:
+                        print(f"  [{label}] retries exhausted -- next model")
+                else:
+                    print(f"  [{label}] error on {model}: {e} -- next model")
+                    last_exc = e
+                    break
     raise RuntimeError(f"[{label}] all models exhausted. Last: {last_exc}") from last_exc
 
 

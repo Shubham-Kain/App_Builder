@@ -330,7 +330,7 @@
           <input type="text" id="backendUrl" value="http://localhost:8000" spellcheck="false">
         </div>
         <label for="promptInput">describe the app you want built</label>
-        <textarea id="promptInput" placeholder="e.g. a pomodoro timer with a start/pause/reset button and a session counter"></textarea>
+        <textarea id="promptInput" placeholder="e.g. Personal Finance Dashboard with income/expense tracking, categories (Food, Travel, Bills), monthly filters, LocalStorage, dark/light theme, CSV export, and budget warnings"></textarea>
         <button class="build-btn" id="buildBtn">Build app</button>
         <div class="hint">⌘/Ctrl + Enter to build</div>
       </div>
@@ -510,8 +510,12 @@ async function runBuild(){
 
     planName = (data.name || 'my_app').toString().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/gi,'').toLowerCase() || 'my_app';
     log('planner', `plan ready → <strong>${planName}</strong> — ${data.description || ''}`);
+    if(data.complexity){
+      log('planner', `complexity: <strong>${data.complexity}</strong>`);
+    }
     if(data.features && data.features.length){
-      log('planner', 'features: ' + data.features.join(' · '));
+      log('planner', `${data.features.length} features planned:`);
+      data.features.forEach((f, i) => log('planner', `  ${i+1}. ${f}`));
     }
 
     const html = data.files['index.html'] || '';

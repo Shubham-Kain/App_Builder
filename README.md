@@ -15,37 +15,40 @@ The project uses a multi-agent pipeline built with LangChain and LangGraph:
 
 | Layer | Technology |
 |---|---|
-| Language | Python 3.13+ |
+| Language | Python 3.10+ |
+| Web Framework | FastAPI, Uvicorn |
 | Agent Framework | LangGraph, LangChain |
-| LLM Provider | OpenRouter |
+| LLM Provider | Google Gemini API |
 | Data Validation | Pydantic v2 |
 | Config | python-dotenv |
 
 ## Setup
 
-1. Create a local `.env` file from the example:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-2. Open `.env` and set your OpenRouter key:
+1. Create a local `.env` file:
 
 ```env
-OPENROUTER_API_KEY=your_real_key_here
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-3. Install dependencies:
+2. Install dependencies:
 
-```powershell
-pip install -e .
+```bash
+pip install -r Requirements.txt
 ```
 
-4. Run the app:
+3. Run the app:
 
-```powershell
+```bash
 python main.py
 ```
+
+Open your browser at `http://localhost:8000` to start building apps!
+
+## Deployment (Render)
+
+- **Build Command**: `pip install -r Requirements.txt`
+- **Start Command**: `python main.py`
+- **Environment Variables**: Add `GOOGLE_GEMINI_API_KEY` in Render dashboard.
 
 ## Security Notes
 

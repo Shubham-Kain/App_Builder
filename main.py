@@ -362,7 +362,7 @@ _FRONTEND_HTML = r"""<!doctype html>
           <input type="text" id="backendUrl" value="http://localhost:8000" spellcheck="false">
         </div>
         <label for="promptInput">describe the app you want built</label>
-        <textarea id="promptInput" placeholder="e.g. a pomodoro timer with a start/pause/reset button and a session counter"></textarea>
+        <textarea id="promptInput" placeholder="e.g. Personal Finance Dashboard with income/expense tracking, categories (Food, Travel, Bills), monthly filters, LocalStorage, dark/light theme, CSV export, and budget warnings"></textarea>
         <button class="build-btn" id="buildBtn">Build app</button>
         <div class="hint">⌘/Ctrl + Enter to build</div>
       </div>
@@ -531,8 +531,12 @@ async function runBuild(){
 
     planName = (data.name || 'my_app').toString().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/gi,'').toLowerCase() || 'my_app';
     log('planner', `plan ready → <strong>${planName}</strong> — ${data.description || ''}`);
+    if(data.complexity){
+      log('planner', `complexity: <strong>${data.complexity}</strong>`);
+    }
     if(data.features && data.features.length){
-      log('planner', 'features: ' + data.features.join(' · '));
+      log('planner', `${data.features.length} features planned:`);
+      data.features.forEach((f, i) => log('planner', `  ${i+1}. ${f}`));
     }
 
     const html = data.files['index.html'] || '';
@@ -598,6 +602,7 @@ class BuildRequest(BaseModel):
 class BuildResponse(BaseModel):
     name: str
     description: str
+    complexity: str = "simple"
     features: list[str] = []
     files: dict[str, str]
     status: str
@@ -636,6 +641,7 @@ def build_app(req: BuildRequest):
     return BuildResponse(
         name=plan.name,
         description=plan.description,
+        complexity=plan.complexity,
         features=plan.features,
         files=files,
         status=status,
@@ -683,7 +689,7 @@ def run_cli(recursion_limit: int) -> None:
             print("No prompt provided.")
             sys.exit(1)
 
-        print("\n═══ Starting App Builder ═══\n")
+        print("\n=== Starting App Builder ===\n")
         result = agent.invoke(
             {"user_prompt": user_prompt},
             {"recursion_limit": recursion_limit},
@@ -691,13 +697,13 @@ def run_cli(recursion_limit: int) -> None:
 
         plan: Plan | None = result.get("plan")
         status = result.get("status", "unknown")
-        print(f"\n═══ Pipeline finished — status: {status} ═══\n")
+        print(f"\n=== Pipeline finished -- status: {status} ===\n")
 
         if plan:
             project_folder = os.path.join(os.getcwd(), plan.name)
             index_html = os.path.join(project_folder, "index.html")
             if os.path.exists(index_html):
-                print(f"Opening {index_html} …")
+                print(f"Opening {index_html} ...")
                 webbrowser.open(f"file:///{os.path.abspath(index_html)}")
             else:
                 print(f"index.html not found in {project_folder}")
@@ -737,8 +743,8 @@ def main() -> None:
 
     import uvicorn
     port = int(os.environ.get("PORT", args.port))
-    print(f"\n═══ Forge API server → http://localhost:{port} ═══")
-    print("Point the frontend's 'backend URL' field at this address.\n")
+    print(f"\n=== Forge API server -> http://localhost:{port} ===")
+    print("Open your browser at http://localhost:{} and start building!\n".format(port))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
