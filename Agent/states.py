@@ -47,15 +47,45 @@ class Plan(BaseModel):
     )
     features: list[str] = Field(
         description=(
-            "Exhaustive list of ALL features to be implemented. "
-            "List 12-20 concrete, testable features for complex apps. Include every detail requested by the user."
+            "Exhaustive, autonomous list of ALL features to implement. "
+            "ALWAYS list 20-30 concrete, testable features regardless of how brief the user prompt is. "
+            "Add standard domain features autonomously even if not mentioned by the user. "
+            "Include CRUD, dashboard metrics, specialized tools, analytics, search/filters, "
+            "gamification (streaks/scores), settings, CSV export, and countdown/deadline features."
+        )
+    )
+    nav_tabs: list[str] = Field(
+        default=[
+            "Overview Dashboard",
+            "Main Manager",
+            "Specialized Tool",
+            "Categories & Goals",
+            "Analytics & Charts",
+            "Timeline & Reports",
+            "Settings & Export",
+        ],
+        description=(
+            "Exactly 7 sidebar navigation tab names tailored to the specific app domain. "
+            "Examples for Study: ['Overview Dashboard', 'Task Planner', 'Pomodoro Focus', "
+            "'Subjects & Topics', 'Analytics & Charts', 'Exam Countdown', 'Settings & Export']. "
+            "Examples for Finance: ['Overview Dashboard', 'Transaction Log', 'Budget Tracker', "
+            "'Categories & Goals', 'Spending Analytics', 'Monthly Reports', 'Settings & Export']."
+        )
+    )
+    data_models: list[str] = Field(
+        default=["items", "categories", "sessions", "goals", "settings"],
+        description=(
+            "5-8 LocalStorage data model/entity names for the app. "
+            "Examples for Study: ['tasks', 'subjects', 'pomodoro_sessions', 'exams', 'settings']. "
+            "Examples for Finance: ['transactions', 'categories', 'budgets', 'goals', 'monthly_summaries', 'settings']. "
+            "Each model name should be lowercase with underscores."
         )
     )
     files: list[File] = Field(
         default=[
-            File(path="index.html", purpose="Complete semantic HTML structure, sidebar, dashboard, tabs, and modals"),
-            File(path="style.css", purpose="Modern design system, dark/light theme, responsive grid, animations"),
-            File(path="script.js", purpose="Full application logic, LocalStorage state, timers, charts, and interactivity"),
+            File(path="index.html", purpose="Complete semantic HTML — 7 tab panes, sidebar, topbar, 6 metric cards, 4+ modals, all interactive elements"),
+            File(path="style.css", purpose="Full premium design system — dark/light theme, glassmorphism, animations, all components styled, 700+ lines"),
+            File(path="script.js", purpose="Complete app logic — multi-model LocalStorage CRUD, charts, timers, filters, CSV export, 900+ lines"),
         ],
         description="Exactly 3 files: index.html, style.css, script.js."
     )

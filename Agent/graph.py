@@ -51,9 +51,9 @@ if not _API_KEY:
 def _make_llm(model: str) -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
         model=model,
-        temperature=0.3,
+        temperature=0.2,          # Lower = more deterministic, consistent code
         google_api_key=_API_KEY,
-        timeout=300,
+        timeout=600,               # 10 min — needed for large HTML/CSS/JS generation
     )
 
 
